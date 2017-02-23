@@ -29,7 +29,7 @@ el = result.unwrap()
 
 **Q:** BS4 already implement lxml parser. Why i should use FastSoup?
 
-**A:** Yes, BS4 implement **parsper**, and it's just building the tree. All next interactions proceed with "Python speed":
+**A:** Yes, BS4 implement **parser**, and it's just building the tree. All next interactions proceed with "Python speed":
 searching, serialization.
 FastSoup internally use lxml and guarantee "C speed".
 
