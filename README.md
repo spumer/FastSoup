@@ -1,4 +1,4 @@
-# FastSoup
+# FastSoup [![Build Status](https://travis-ci.org/spumer/FastSoup.svg?branch=master)](https://travis-ci.org/spumer/FastSoup)
 Provide BeautifulSoup-like interface object to fast html parsing
 
 # Key features
