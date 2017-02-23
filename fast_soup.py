@@ -1,0 +1,198 @@
+"""Provide BeautifulSoup-like interface object
+to fast html parsing.
+
+Interface more simple than original and don't allow use all features.
+"""
+
+import io
+import functools
+
+import lxml.etree
+
+from bs4 import SoupStrainer as BS4SoupStrainer
+
+
+_missing = object()
+
+
+def _el2str(el):
+   return lxml.etree.tostring(el, method='c14n', with_tail=False).decode()
+
+
+def _parse_html(html, parser=lxml.etree.HTMLParser()):
+   return lxml.etree.parse(io.StringIO(html), parser=parser)
+
+
+class HDict(dict):
+    def __hash__(self):
+        return hash(frozenset(self.items()))
+
+
+class Tag:
+    scope = './/'
+
+    _reports_prevent_extract_attrs = True
+    _reports_prevent_repr = True
+
+    def __init__(self, el):
+        self._el = el
+
+    def unwrap(self):
+        return self._el
+
+    def get_text(self, strip=False):
+        return ''.join(x.strip() if strip else x for x in self._el.itertext())
+
+    def __str__(self):
+        return _el2str(self._el)
+
+    def clear(self):
+        return self._el.clear()
+
+    def get(self, item, default=None):
+        return self._el.get(item, default)
+
+    def __getitem__(self, item):
+        value = self.get(item, _missing)
+        if value is _missing:
+            raise KeyError(item)
+        return value
+
+    @property
+    def name(self):
+        return self._el.tag
+    
+    @name.setter
+    def name(self, value):
+        self._el.tag = value
+
+    @property
+    def string(self):
+        return self._el.text
+
+    @classmethod
+    def _build_single_xpath(cls, name=None, attrs=None, _mode=None, _scope=None):
+        """Build XPath by given attrs
+
+        @param name: tag name
+        @param attrs: tag attributes
+        @param _mode: xpath search mode (e.g 'following', 'following-sibling')
+        @return: str
+        """
+        scope = _scope
+
+        if scope is None:
+            scope = cls.scope
+
+        xpath = [scope]
+
+        if name is None:
+            name = '*'
+
+        if _mode is not None:
+            name = '%s::%s' % (_mode, name)
+
+        xpath.append(name)
+
+        if attrs:
+            attrs_xpath = []
+
+            def _render(name, value, tmplt):
+                return tmplt.format(
+                    name,
+                    value.replace('"', '\\"'),
+                )
+
+            for attr_name, attr_value in attrs.items():
+                if attr_name == 'text':
+                    # for case: [text()="..."]
+                    attr_name = 'text()'
+                else:
+                    # for case: [@id="..."]
+                    attr_name = '@' + attr_name
+
+                if attr_value:
+                    # lxml is more strict than BS4
+                    # BS4 mean "contains" logic for attribute search
+                    # Use lxml `contains` function to implement this behaviour:
+                    # using the space delimiters to find the class name boundaries
+                    # cause `contains` match a substring
+                    tmplt = 'contains(concat(" ", normalize-space({}), " "), " {} ")'
+                    attr_xpath = _render(attr_name, attr_value, tmplt)
+
+                # If attr value is empty guess should match tags without this attr too
+                # cause BS4 do that
+                else:
+                    # lxml don't match this case, workaround by inverse
+                    attr_xpath = 'not(%s)' % _render(attr_name, attr_value or '', '{} != "{}"')
+
+                attrs_xpath.append(attr_xpath)
+
+            xpath.append('[' + ' and '.join(attrs_xpath) + ']')
+
+        return ''.join(xpath)
+
+    @classmethod
+    @functools.lru_cache()
+    def _build_xpath(cls, names=(), attrs=None, _mode=None, _scope=None) -> lxml.etree.XPath:
+        """Build XPath expression
+
+        @param names: tags names
+        @param attrs: tags attributes (applied for each tag)
+        @return: compiled xpath expression
+        """
+        if not names:
+            return lxml.etree.XPath(cls._build_single_xpath(None, attrs, _mode, _scope))
+
+        return lxml.etree.XPath(' | '.join(cls._build_single_xpath(n, attrs, _mode, _scope) for n in names))
+
+    def _find_all(self, name=None, attrs=None, _mode=None, _scope=None):
+        if not isinstance(name, BS4SoupStrainer):
+            _strainer = BS4SoupStrainer(name, **attrs)
+        else:
+            _strainer = name
+
+        # гарантируем что name и attrs всегда будут иметь один формат
+        name = _strainer.name
+        attrs = _strainer.attrs
+
+        if _strainer.text is not None:
+            # don't override if `text` field was manually setted before
+            attrs.setdefault('text', _strainer.text)
+
+        if isinstance(name, list):
+            # _build_xpath принимает только хэшируемые параметры
+            names = tuple(name)
+        else:
+            names = (name, )
+
+        xpath = self._build_xpath(names, HDict(attrs), _mode=_mode, _scope=_scope)
+        return [Tag(el) for el in xpath(self._el)]
+
+    def _find(self, name=None, attrs=None, _mode=None, _scope=None):
+        res = self._find_all(name=name, attrs=attrs, _mode=_mode, _scope=_scope)
+
+        if res:
+            return res[0]
+
+        return None
+
+    def find_all(self, name=None, **attrs):
+        return self._find_all(name, attrs)
+
+    def find(self, name=None, **attrs):
+        return self._find(name, attrs)
+
+    def find_next(self, name=None, **attrs):
+        return self._find(name, attrs, _mode='following')
+
+    def find_next_sibling(self, name=None, **attrs):
+        return self._find(name, attrs, _mode='following-sibling', _scope='./')
+
+
+class FastSoup(Tag):
+    scope = '//'
+
+    def __init__(self, markup=''):
+        tree = _parse_html(markup)
+        super().__init__(el=tree.getroot())
