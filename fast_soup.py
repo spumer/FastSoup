@@ -31,9 +31,6 @@ class HDict(dict):
 class Tag:
     scope = './/'
 
-    _reports_prevent_extract_attrs = True
-    _reports_prevent_repr = True
-
     def __init__(self, el):
         self._el = el
 
