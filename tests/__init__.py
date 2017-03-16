@@ -2,10 +2,10 @@ import unittest
 
 
 from bs4 import BeautifulSoup as BS4Soup
-from ..fast_soup import FastSoup
+from fast_soup import FastSoup
 
 
-class TestFind(unittest.TestCase):
+class BaseTestFind(unittest.TestCase):
     data = '''
     <html>
 
@@ -26,60 +26,57 @@ class TestFind(unittest.TestCase):
 
     '''
 
-    bs4_soup = BS4Soup(data)
-    soup = FastSoup(data)
+    soup = NotImplemented
+
+    @classmethod
+    def setUpClass(cls):
+        if cls is BaseTestFind:
+            raise unittest.SkipTest("Skip BaseTestFind tests, it's a base class")
+        super().setUpClass()
 
     def test_common(self):
-        res1 = self.bs4_soup.find('a')
-        res2 = self.soup.find('a')
+        res = self.soup.find('a')
 
-        self.assertEqual(res1.name, res2.name)
+        self.assertEqual(res.name, 'a')
 
-        self.assertEqual(res1.get_text(), res2.get_text())
-        self.assertEqual(res1.get_text(strip=True), res2.get_text(strip=True))
+        self.assertEqual(res.get_text(), '   It\'s a text    ')
+        self.assertEqual(res.get_text(strip=True), 'It\'s a text')
 
         # search by text
-        res3 = self.bs4_soup.find('a', text='No href')
-        res4 = self.soup.find('a', text='No href')
-
-        self.assertEqual(res3.string, res4.string)
+        res = self.soup.find('a', text='No href')
+        self.assertEqual(res.string, 'No href')
 
     def test_empty_attr(self):
-        res1 = self.bs4_soup.find_all('a', href='')
-        res2 = self.soup.find_all('a', href='')
+        res = self.soup.find_all('a', href='')
 
-        self.assertTrue(len(res1) == len(res2))
+        self.assertEqual(len(res), 2)
 
     def test_sibling(self):
-        res1 = self.bs4_soup.find('div', id='first').find_next_sibling('p')
-        res2 = self.soup.find('div', id='first').find_next_sibling('p')
-
-        self.assertEqual(res1['id'], 'sibling')
-        self.assertEqual(res1['id'], res2['id'])
+        res = self.soup.find('div', id='first').find_next_sibling('p')
+        self.assertEqual(res['id'], 'sibling')
 
     def test_following(self):
-        base_res1 = self.bs4_soup.find('div', id='first')
-        base_res2 = self.soup.find('div', id='first')
+        base_res = self.soup.find('div', id='first')
 
-        res1 = base_res1.find_next('p')
-        res2 = base_res2.find_next('p')
-        self.assertEqual(res1['id'], 'following')
-        self.assertEqual(res1['id'], res2['id'])
+        res = base_res.find_next('p')
+        self.assertEqual(res['id'], 'following')
 
         # in this case find should works like find_next
-        res1 = base_res1.find('p')
-        res2 = base_res2.find('p')
-        self.assertEqual(res1['id'], 'following')
-        self.assertEqual(res1['id'], res2['id'])
+        res = base_res.find('p')
+        self.assertEqual(res['id'], 'following')
 
     def test_attr_contains(self):
-        res1 = self.bs4_soup.find_all('h1', class_='multiple-value')
-        res2 = self.soup.find_all('h1', class_='multiple-value')
+        res = self.soup.find_all('h1', class_='multiple-value')
+        self.assertEqual(len(res), 1)
 
-        self.assertNotEqual(res1, [])
-        self.assertNotEqual(res2, [])
 
-        self.assertTrue(len(res1) == len(res2))
+
+class BS4TestFind(BaseTestFind):
+    soup = BS4Soup(BaseTestFind.data)
+
+
+class FastSoupTestFind(BaseTestFind):
+    soup = FastSoup(BaseTestFind.data)
 
 
 if __name__ == '__main__':
