@@ -1,6 +1,5 @@
 import unittest
 
-
 from bs4 import BeautifulSoup as BS4Soup
 from fast_soup import FastSoup
 
@@ -21,6 +20,19 @@ class BaseTestFind(unittest.TestCase):
 
     <h1 class="multiple-value multiple-value2"></h1>
     <h1 class="multiple-value-sub multiple-value2-sub"></h1>
+
+    <table class="recursive">
+    <tr>
+        <td>
+        <table><tr><td>Inner row</td></tr></table>
+        </td>
+    </tr>
+    <tr>
+        <td>
+        Row
+        </td>
+    </tr>
+    </table>
 
     </html>
 
@@ -69,6 +81,16 @@ class BaseTestFind(unittest.TestCase):
         res = self.soup.find_all('h1', class_='multiple-value')
         self.assertEqual(len(res), 1)
 
+    def test_recursive(self):
+        base_res = self.soup.find('table', class_='recursive')
+        res = []
+        for row in base_res.find_all('tr', recursive=False):
+            res.extend(row.find_all('td', recursive=False))
+
+        self.assertEqual(len(res), 2)
+
+        self.assertEqual(res[0].get_text(strip=True), 'Inner row')
+        self.assertEqual(res[1].get_text(strip=True), 'Row')
 
 
 class BS4TestFind(BaseTestFind):

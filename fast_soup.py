@@ -30,6 +30,7 @@ class HDict(dict):
 
 class Tag:
     scope = './/'
+    scope_rel = '.'
 
     def __init__(self, el):
         self._el = el
@@ -68,6 +69,13 @@ class Tag:
         return self._el.text
 
     @classmethod
+    def _get_scope(cls, recursive=True):
+        if recursive:
+            return cls.scope_rel + '//'
+        else:
+            return cls.scope_rel + '/'
+
+    @classmethod
     def _build_single_xpath(cls, name=None, attrs=None, _mode=None, _scope=None):
         """Build XPath by given attrs
 
@@ -79,7 +87,7 @@ class Tag:
         scope = _scope
 
         if scope is None:
-            scope = cls.scope
+            scope = cls._get_scope()
 
         xpath = [scope]
 
@@ -174,11 +182,13 @@ class Tag:
 
         return None
 
-    def find_all(self, name=None, **attrs):
-        return self._find_all(name, attrs)
+    def find_all(self, name=None, recursive=True, **attrs):
+        scope = self._get_scope(recursive)
+        return self._find_all(name, attrs, _scope=scope)
 
-    def find(self, name=None, **attrs):
-        return self._find(name, attrs)
+    def find(self, name=None, recursive=True, **attrs):
+        scope = self._get_scope(recursive)
+        return self._find(name, attrs, _scope=scope)
 
     def find_next(self, name=None, **attrs):
         return self._find(name, attrs, _mode='following')
@@ -189,6 +199,7 @@ class Tag:
 
 class FastSoup(Tag):
     scope = '//'
+    scope_rel = ''
 
     def __init__(self, markup=''):
         tree = _parse_html(markup)
