@@ -29,7 +29,6 @@ class HDict(dict):
 
 
 class Tag:
-    scope = './/'
     scope_rel = '.'
 
     def __init__(self, el):
@@ -198,7 +197,6 @@ class Tag:
 
 
 class FastSoup(Tag):
-    scope = '//'
     scope_rel = ''
 
     def __init__(self, markup=''):
