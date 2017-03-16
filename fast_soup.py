@@ -38,8 +38,8 @@ class Tag:
     def unwrap(self):
         return self._el
 
-    def get_text(self, strip=False):
-        return ''.join(x.strip() if strip else x for x in self._el.itertext())
+    def get_text(self, separator='', strip=False):
+        return separator.join(x.strip() if strip else x for x in self._el.itertext())
 
     def __str__(self):
         return _el2str(self._el)

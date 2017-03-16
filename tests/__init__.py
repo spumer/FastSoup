@@ -18,6 +18,12 @@ class BaseTestFind(unittest.TestCase):
     <p id="sibling">
     </p>
 
+    <p id="multiline">
+        Multiline
+        <br/>
+        text
+    </p>
+
     <h1 class="multiple-value multiple-value2"></h1>
     <h1 class="multiple-value-sub multiple-value2-sub"></h1>
 
@@ -53,6 +59,9 @@ class BaseTestFind(unittest.TestCase):
 
         self.assertEqual(res.get_text(), '   It\'s a text    ')
         self.assertEqual(res.get_text(strip=True), 'It\'s a text')
+
+        res = self.soup.find('p', id='multiline')
+        self.assertEqual(res.get_text(' ', strip=True), 'Multiline text')
 
         # search by text
         res = self.soup.find('a', text='No href')
