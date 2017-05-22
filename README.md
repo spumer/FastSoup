@@ -3,7 +3,7 @@ BeautifulSoup interface for lxml
 
 # Key features
 - **FAST** search in tree
-- **FAST** to str
+- **FAST** serialize to str
 - BeautifulSoup4 interface to interact with object:
     - Search: `find`, `find_all`, `find_next`, `find_next_sibling`
     - Text: `get_text`, `string`
