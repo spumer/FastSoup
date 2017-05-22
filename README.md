@@ -1,10 +1,10 @@
 # FastSoup [![Build Status](https://travis-ci.org/spumer/FastSoup.svg?branch=master)](https://travis-ci.org/spumer/FastSoup)
-Provide BeautifulSoup-like interface object to fast html parsing
+BeautifulSoup interface for lxml
 
 # Key features
-- **No GIL** locking when search in tree
-- **No GIL** locking when serialize to str
-- BeautifulSoup4-like interface to interact with object:
+- **FAST** search in tree
+- **FAST** to str
+- BeautifulSoup4 interface to interact with object:
     - Search: `find`, `find_all`, `find_next`, `find_next_sibling`
     - Text: `get_text`, `string`
     - Tag: `name`, `get`, `clear`, `__getitem__`, `__str__`
