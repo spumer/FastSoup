@@ -40,6 +40,10 @@ class BaseTestFind(unittest.TestCase):
     </tr>
     </table>
 
+    <div>
+        <span class="body strikeout"></span>
+    </div>
+
     </html>
 
     '''
@@ -100,6 +104,10 @@ class BaseTestFind(unittest.TestCase):
 
         self.assertEqual(res[0].get_text(strip=True), 'Inner row')
         self.assertEqual(res[1].get_text(strip=True), 'Row')
+
+    def test_select(self):
+        res = self.soup.select('span.strikeout.body')
+        self.assertEqual(len(res), 1)
 
 
 class BS4TestFind(BaseTestFind):

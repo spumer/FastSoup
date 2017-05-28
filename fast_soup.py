@@ -7,7 +7,26 @@ Interface more simple than original and don't allow use all features.
 import io
 import functools
 
+import lxml.html
 import lxml.etree
+
+try:
+    import lxml.cssselect
+
+    xml_translator = lxml.cssselect.LxmlTranslator()
+    html_translator = lxml.cssselect.LxmlHTMLTranslator()
+
+except ImportError as exc:
+    class RaiseOnUse:
+        def __init__(self, e):
+            self.exc = e
+
+        def __getattr__(self, item):
+            raise self.exc
+
+    xml_translator = RaiseOnUse(exc)
+    html_translator = RaiseOnUse(exc)
+
 
 from bs4 import SoupStrainer as BS4SoupStrainer
 
@@ -19,8 +38,8 @@ def _el2str(el):
    return lxml.etree.tostring(el, method='c14n', with_tail=False).decode()
 
 
-def _parse_html(html, parser=lxml.etree.HTMLParser()):
-   return lxml.etree.parse(io.StringIO(html), parser=parser)
+def _parse_html(html, parser=lxml.html.html_parser):
+    return lxml.etree.parse(io.StringIO(html), parser=parser)
 
 
 class HDict(dict):
@@ -31,8 +50,16 @@ class HDict(dict):
 class Tag:
     scope_rel = '.'
 
+    __slots__ = ('_el', '_translator')
+
     def __init__(self, el):
+        if isinstance(el, lxml.html.HtmlElement):
+            translator = html_translator
+        else:
+            translator = xml_translator
+
         self._el = el
+        self._translator = translator
 
     def unwrap(self):
         return self._el
@@ -55,6 +82,10 @@ class Tag:
             raise KeyError(item)
         return value
 
+    def select(self, selector):
+        xpath = self._build_css_xpath(selector, self._translator)
+        return xpath(self._el)
+
     @property
     def name(self):
         return self._el.tag
@@ -73,6 +104,11 @@ class Tag:
             return cls.scope_rel + '//'
         else:
             return cls.scope_rel + '/'
+
+    @classmethod
+    @functools.lru_cache()
+    def _build_css_xpath(cls, selector, translator):
+        return lxml.etree.XPath(translator.css_to_xpath(selector))
 
     @classmethod
     def _build_single_xpath(cls, name=None, attrs=None, _mode=None, _scope=None):
