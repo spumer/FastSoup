@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fast-soup"
-version = "0.1.0"
+version = "1.0.0"
 description = "BeautifulSoup interface for lxml"
 authors = ["spumer <spumer-tm@yandex.ru>"]
 license = "MIT"
