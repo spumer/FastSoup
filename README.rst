@@ -1,11 +1,12 @@
 
 FastSoup 
-.. image:: https://travis-ci.org/spumer/FastSoup.svg?branch=master
-   :target: https://travis-ci.org/spumer/FastSoup
-   :alt: Build Status
 
-.. image:: https://coveralls.io/repos/github/spumer/FastSoup/badge.svg?branch=master
-    :target: https://coveralls.io/github/spumer/FastSoup?branch=master
+.. image:: https://travis-ci.org/spumer/FastSoup.svg
+    :target: https://travis-ci.org/spumer/FastSoup
+    :alt: Build Status
+
+.. image:: https://coveralls.io/repos/github/spumer/FastSoup/badge.svg
+    :target: https://coveralls.io/github/spumer/FastSoup
 
 =====================================================================================================================================================
 
