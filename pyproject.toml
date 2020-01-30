@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "fast-soup"
+version = "1.0.0"
+description = "BeautifulSoup interface for lxml"
+authors = ["spumer <spumer-tm@yandex.ru>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+lxml = "^4.5.0"
+beautifulsoup4 = "^4.3.2"
+cssselect = "^1.0.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5"
+bumpversion = "^0.5.3"
+unify = "^0.4.0"
+flake8-awesome = "^1.2"
+black = "^19.10b0"
+pytest-cov = "^2.6"
+pytest-deadfixtures = "^2.1.0"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

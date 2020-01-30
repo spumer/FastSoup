@@ -4,11 +4,12 @@ to fast html parsing.
 Interface more simple than original and don't allow use all features.
 """
 
-import io
 import functools
+import io
 
-import lxml.html
 import lxml.etree
+import lxml.html
+from bs4 import SoupStrainer as BS4SoupStrainer
 
 try:
     import lxml.cssselect
@@ -17,6 +18,7 @@ try:
     html_translator = lxml.cssselect.LxmlHTMLTranslator()
 
 except ImportError as exc:
+
     class RaiseOnUse:
         def __init__(self, e):
             self.exc = e
@@ -28,14 +30,13 @@ except ImportError as exc:
     html_translator = RaiseOnUse(exc)
 
 
-from bs4 import SoupStrainer as BS4SoupStrainer
-
+__version__ = '1.0.0'
 
 _missing = object()
 
 
 def _el2str(el):
-   return lxml.etree.tostring(el, method='c14n', with_tail=False).decode()
+    return lxml.etree.tostring(el, method='c14n', with_tail=False).decode()
 
 
 def _parse_html(html, parser=lxml.html.html_parser):
@@ -65,7 +66,7 @@ class Tag:
         return self._el
 
     def get_text(self, separator='', strip=False):
-        return separator.join(x.strip() if strip else x for x in self._el.itertext())
+        return separator.join(x.strip() if strip else x for x in self._el.itertext())  # noqa: IF100
 
     def __str__(self):
         return _el2str(self._el)
@@ -89,7 +90,7 @@ class Tag:
     @property
     def name(self):
         return self._el.tag
-    
+
     @name.setter
     def name(self, value):
         self._el.tag = value
@@ -109,6 +110,40 @@ class Tag:
     @functools.lru_cache()
     def _build_css_xpath(cls, selector, translator):
         return lxml.etree.XPath(translator.css_to_xpath(selector))
+
+    @classmethod
+    def _build_attrs_xpath(cls, attrs):
+        attrs_xpath = []
+
+        def _render(name, value, tmplt):
+            return tmplt.format(name, value.replace('"', '\\"'),)
+
+        for attr_name, attr_value in attrs.items():
+            if attr_name == 'text':
+                # for case: [text()="..."]
+                attr_name = 'text()'
+            else:
+                # for case: [@id="..."]
+                attr_name = '@' + attr_name
+
+            if attr_value:
+                # lxml is more strict than BS4
+                # BS4 mean "contains" logic for attribute search
+                # Use lxml `contains` function to implement this behaviour:
+                # using the space delimiters to find the class name boundaries
+                # cause `contains` match a substring
+                tmplt = 'contains(concat(" ", normalize-space({}), " "), " {} ")'
+                attr_xpath = _render(attr_name, attr_value, tmplt)
+
+            # If attr value is empty guess should match tags without this attr too
+            # cause BS4 do that
+            else:
+                # lxml don't match this case, workaround by inverse
+                attr_xpath = 'not(%s)' % _render(attr_name, attr_value or '', '{} != "{}"')
+
+            attrs_xpath.append(attr_xpath)
+
+        return attrs_xpath
 
     @classmethod
     def _build_single_xpath(cls, name=None, attrs=None, _mode=None, _scope=None):
@@ -135,39 +170,7 @@ class Tag:
         xpath.append(name)
 
         if attrs:
-            attrs_xpath = []
-
-            def _render(name, value, tmplt):
-                return tmplt.format(
-                    name,
-                    value.replace('"', '\\"'),
-                )
-
-            for attr_name, attr_value in attrs.items():
-                if attr_name == 'text':
-                    # for case: [text()="..."]
-                    attr_name = 'text()'
-                else:
-                    # for case: [@id="..."]
-                    attr_name = '@' + attr_name
-
-                if attr_value:
-                    # lxml is more strict than BS4
-                    # BS4 mean "contains" logic for attribute search
-                    # Use lxml `contains` function to implement this behaviour:
-                    # using the space delimiters to find the class name boundaries
-                    # cause `contains` match a substring
-                    tmplt = 'contains(concat(" ", normalize-space({}), " "), " {} ")'
-                    attr_xpath = _render(attr_name, attr_value, tmplt)
-
-                # If attr value is empty guess should match tags without this attr too
-                # cause BS4 do that
-                else:
-                    # lxml don't match this case, workaround by inverse
-                    attr_xpath = 'not(%s)' % _render(attr_name, attr_value or '', '{} != "{}"')
-
-                attrs_xpath.append(attr_xpath)
-
+            attrs_xpath = cls._build_attrs_xpath(attrs)
             xpath.append('[' + ' and '.join(attrs_xpath) + ']')
 
         return ''.join(xpath)
@@ -204,7 +207,7 @@ class Tag:
             # _build_xpath принимает только хэшируемые параметры
             names = tuple(name)
         else:
-            names = (name, )
+            names = (name,)
 
         xpath = self._build_xpath(names, HDict(attrs), _mode=_mode, _scope=_scope)
         return [Tag(el) for el in xpath(self._el)]
