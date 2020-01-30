@@ -7,3 +7,6 @@ python:
 install: "pip install -r requirements.txt"
 # command to run tests
 script: make lint test
+after_success:
+  - pip install coveralls;
+  - coveralls

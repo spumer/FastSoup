@@ -28,7 +28,7 @@ init:
 	poetry install
 
 test:   ## Запуск тестов
-	$(BIN)python -m pytest $(args)
+	$(BIN)python -m pytest --cov=$(CODE) $(args)
 
 lint:  ## Проверка кода (linting)
 	$(BIN)flake8 --jobs 4 --statistics --show-source $(CODE) tests
