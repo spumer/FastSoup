@@ -2,7 +2,7 @@
 
 # if BIN not provided, try to detect the binary from the environment
 PYTHON_INSTALL := $(shell python3 -c 'import sys;print(sys.executable)')
-BIN ?= $(shell [ -e .venv/bin ] && echo '.venv/bin' || dirname $(PYTHON_INSTALL))/
+BIN ?= $(shell [ -e .venv/bin ] && echo `pwd`/'.venv/bin' || dirname $(PYTHON_INSTALL))/
 
 CODE = fast_soup
 
