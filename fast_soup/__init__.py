@@ -234,6 +234,26 @@ class Tag:
     def find_next_sibling(self, name=None, **attrs):
         return self._find(name, attrs, _mode='following-sibling', _scope='./')
 
+    def extract(self):
+        element = self.unwrap()
+        parent = element.find('..')
+        parent.remove(element)
+
+    def replace_with(self, replace_with):
+        if replace_with is self:
+            return
+        if isinstance(replace_with, Tag):
+            replace_with = replace_with.unwrap()
+        element = self.unwrap()
+        parent = element.find('..')
+        if not parent:
+            raise ValueError(
+                "Cannot replace one element with another when the"
+                "element to be replaced is not part of a tree.")
+        if replace_with is parent:
+            raise ValueError("Cannot replace a Tag with its parent.")
+        parent.replace(self.unwrap(), replace_with)
+
 
 class FastSoup(Tag):
     scope_rel = ''
