@@ -30,7 +30,7 @@ except ImportError as exc:
     html_translator = RaiseOnUse(exc)
 
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 _missing = object()
 

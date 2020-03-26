@@ -30,7 +30,7 @@ Install
 
 .. code-block:: bash
 
-   pip install fast-soup==1.0.0
+   pip install fast-soup==1.1.0
 
 How to use
 ----------
