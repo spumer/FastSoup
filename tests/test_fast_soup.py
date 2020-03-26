@@ -1,3 +1,5 @@
+import functools
+
 import pytest
 from bs4 import BeautifulSoup as BS4Soup
 
@@ -51,12 +53,17 @@ def data():
 
 
 @pytest.fixture(params=['bs4', 'fast-soup'])
-def soup(request, data):
+def soup_cls(request):
     if request.param == 'bs4':
-        return BS4Soup(data, features='lxml')
+        return functools.partial(BS4Soup, features='lxml')
     else:
         assert request.param == 'fast-soup'
-        return FastSoup(data)
+        return FastSoup
+
+
+@pytest.fixture()
+def soup(soup_cls, data):
+    return soup_cls(data)
 
 
 def test_common(soup):
@@ -117,3 +124,29 @@ def test_recursive(soup):
 def test_select(soup):
     res = soup.select('span.strikeout.body')
     assert len(res) == 1
+
+
+def test_new_tag(soup_cls):
+    soup = soup_cls('<b></b>')
+    original_tag = soup.find('b')
+
+    new_tag = soup.new_tag('a', attrs={'href': 'http://www.example.com'})
+    original_tag.append(new_tag)
+    assert str(original_tag) == '<b><a href="http://www.example.com"></a></b>'
+
+    new_tag.string = 'Link text.'
+    assert str(original_tag) == '<b><a href="http://www.example.com">Link text.</a></b>'
+
+
+def test_extract(soup_cls):
+    soup = soup_cls('<a>1</a><test>2</test><a>3</a><b>4</b>')
+    test_tag = soup.find('test').extract()
+    assert str(test_tag) == '<test>2</test>'
+    assert str(soup) == '<html><body><a>1</a><a>3</a><b>4</b></body></html>'
+
+
+def test_replace_with(soup_cls):
+    soup = soup_cls('<a><inner>2</inner></a><a>3</a><b>4</b>')
+    original_tag = soup.find('a')
+    original_tag.find('inner').replace_with(soup.new_tag('new_inner'))
+    assert str(original_tag) == '<a><new_inner></new_inner></a>'

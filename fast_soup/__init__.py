@@ -71,6 +71,8 @@ class Tag:
     def __str__(self):
         return _el2str(self._el)
 
+    __repr__ = __str__
+
     def clear(self):
         return self._el.clear()
 
@@ -87,6 +89,19 @@ class Tag:
         xpath = self._build_css_xpath(selector, self._translator)
         return xpath(self._el)
 
+    @staticmethod
+    def new_tag(name, *, attrs=None):
+        if attrs is None:
+            return Tag(lxml.etree.Element(name))
+        else:
+            return Tag(lxml.etree.Element(name, attrib=attrs))
+
+    def append(self, tag_or_el: 'Tag'):
+        if isinstance(tag_or_el, Tag):
+            self._el.append(tag_or_el.unwrap())
+        else:
+            self._el.append(tag_or_el)
+
     @property
     def name(self):
         return self._el.tag
@@ -98,6 +113,10 @@ class Tag:
     @property
     def string(self):
         return self._el.text
+
+    @string.setter
+    def string(self, value):
+        self._el.text = value
 
     @classmethod
     def _get_scope(cls, recursive=True):
@@ -235,24 +254,27 @@ class Tag:
         return self._find(name, attrs, _mode='following-sibling', _scope='./')
 
     def extract(self):
-        element = self.unwrap()
-        parent = element.find('..')
-        parent.remove(element)
+        parent = self._el.getparent()
+        parent.remove(self._el)
+        return self
 
-    def replace_with(self, replace_with):
-        if replace_with is self:
+    def replace_with(self, replace_with: 'Tag'):
+        new_el = replace_with.unwrap()
+        old_el = self._el
+
+        if new_el is old_el:
             return
-        if isinstance(replace_with, Tag):
-            replace_with = replace_with.unwrap()
-        element = self.unwrap()
-        parent = element.find('..')
-        if not parent:
+
+        parent = self._el.getparent()
+        if parent is None:
             raise ValueError(
-                "Cannot replace one element with another when the"
-                "element to be replaced is not part of a tree.")
-        if replace_with is parent:
-            raise ValueError("Cannot replace a Tag with its parent.")
-        parent.replace(self.unwrap(), replace_with)
+                'Cannot replace one element with another when the' 'element to be replaced is not part of a tree.'
+            )
+
+        if new_el is parent:
+            raise ValueError('Cannot replace a Tag with its parent.')
+
+        parent.replace(old_el, new_el)
 
 
 class FastSoup(Tag):
