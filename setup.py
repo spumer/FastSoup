@@ -36,7 +36,7 @@ setup(
     ],
     extras_require={
         "dev": [
-            "black==19.*,>=19.10.0", "bumpversion==0.*,>=0.5.3",
+            "black>=19,<21", "bumpversion==0.*,>=0.5.3",
             "flake8-awesome==1.*,>=1.2.0", "pytest>=5,<8",
             "pytest-cov==2.*,>=2.6.0", "pytest-deadfixtures==2.*,>=2.1.0",
             "unify==0.*,>=0.5.0"
